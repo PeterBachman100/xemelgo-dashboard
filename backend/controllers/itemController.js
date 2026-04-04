@@ -15,40 +15,49 @@ const _performStatusUpdate = async (req, res, {
     const item = await Item.findById(req.params.id);
     if (!item) return res.status(404).json({ message: 'Item not found' });
 
-    // Type Validation
+    // 1. Type Validation
     if (allowedTypes.length > 0 && !allowedTypes.includes(item.solutionType)) {
       return res.status(400).json({ 
         message: `Action '${actionType}' is not allowed for ${item.solutionType}` 
       });
     }
 
-    // Apply State Changes
+    // 2. Apply State Changes
     item.status = targetStatus;
     
-    // Logic: If we provide a new location, use it. 
-    // If targetStatus is missing/consumed, schema will nullify, but we'll be explicit here.
-    if (newLocation) {
-      item.currentLocation = { _id: newLocation.id, name: newLocation.name };
-    } else if (['missing', 'consumed'].includes(targetStatus)) {
+    // UPDATED NULLIFICATION LOGIC
+    // Must include 'complete' to match the Item.js validator
+    const terminalStatuses = ['missing', 'consumed', 'complete'];
+    
+    if (newLocation && !terminalStatuses.includes(targetStatus)) {
+      item.currentLocation = { 
+        _id: newLocation.id, 
+        name: newLocation.name 
+      };
+    } else if (terminalStatuses.includes(targetStatus)) {
       item.currentLocation = null;
     }
 
+    // Standard metadata updates
     item.lastUpdatedBy = { _id: req.user._id, name: req.user.name, role: req.user.role };
+    // Note: 'updatedAt' is handled by timestamps: true, but manual tracking is fine too
     item.lastUpdatedAt = Date.now();
 
+    // 3. Save Item (This triggers the Item.js validator)
     await item.save();
 
-    // Create Audit Event
+    // 4. Create Audit Event (This triggers the Event.js validator)
     await Event.create({
       itemId: item._id,
       user: { _id: req.user._id, name: req.user.name, role: req.user.role },
-      location: item.currentLocation, // Will be null for missing/consumed
+      location: item.currentLocation, // Now correctly null for 'complete'
       action: actionType
     });
 
     res.json(item);
   } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    // This will now catch "Physical Integrity Errors" from the schema
+    res.status(400).json({ message: 'Validation Error', error: error.message });
   }
 };
 

@@ -13,28 +13,38 @@ const eventSchema = new mongoose.Schema({
     required: [true, 'User snapshot is required']
   },
   location: {
-    type: ReferenceSchema,
-    default: null,
-    validate: {
-      validator: function(value) {
-        const hasLocation = !!value;
-
-        // location MUST be null if action is 'missing' or 'consumed'
-        if (['missing', 'consumed'].includes(this.action) && hasLocation) {
-          return false;
-        }
-        
-        // location MUST be provided for physical moves or completions
-        // Matches enums: scanned, received, moved, completed
-        if (['scanned', 'received', 'moved', 'completed'].includes(this.action) && !hasLocation) {
-          return false;
-        }
-        
-        return true;
-      },
-      message: props => `Location integrity error: For action "${this.action}", location must be ${['missing', 'consumed'].includes(this.action) ? 'null' : 'provided'}.`
+  type: ReferenceSchema,
+  default: null,
+  validate: {
+    validator: function(value) {
+      const hasLocation = !!value;
+      
+      // NEW LOGIC: location MUST be null if the action is terminal
+      // We've added 'completed' to this list
+      const terminalActions = ['missing', 'consumed', 'completed'];
+      
+      if (terminalActions.includes(this.action)) {
+        return !hasLocation; // Must be null
+      }
+      
+      // location MUST be provided for active physical movements
+      const movementActions = ['scanned', 'received', 'moved'];
+      if (movementActions.includes(this.action)) {
+        return hasLocation; // Must NOT be null
+      }
+      
+      return true;
+    },
+    message: function(props) {
+      const terminalActions = ['missing', 'consumed', 'completed'];
+      return `Audit Integrity Error: The "${this.action}" action ${
+        terminalActions.includes(this.action) 
+          ? "must have a null location" 
+          : "requires a location snapshot"
+      }.`;
     }
-  },
+  }
+},
   action: {
     type: String,
     required: true,

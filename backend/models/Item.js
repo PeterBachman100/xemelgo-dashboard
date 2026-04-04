@@ -16,39 +16,30 @@ const itemSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    required: true,
-    enum: ['active', 'missing', 'consumed', 'complete'],
+    required: [true, 'Status is required'],
+    enum: {
+      values: ['active', 'missing', 'consumed', 'complete'],
+      message: '{VALUE} is not a valid status. Please use: active, missing, consumed, or complete.'
+    },
     default: 'active',
-    validate: {
-      validator: function(value) {
-        const hasLocation = !!this.currentLocation;
-
-        // Active items MUST have a location (All types)
-        if (value === 'active' && !hasLocation) return false;
-
-        // Missing Assets MUST have null location
-        if (value === 'missing' && this.solutionType === 'asset' && hasLocation) return false;
-
-        // Consumed Inventory MUST have null location
-        if (value === 'consumed' && this.solutionType === 'inventory' && hasLocation) return false;
-
-        // Only Inventory can be 'consumed'
-        if (value === 'consumed' && this.solutionType !== 'inventory') return false;
-        
-        // Only WorkOrders can be 'complete'
-        if (value === 'complete' && this.solutionType !== 'workOrder') return false;
-        
-        // Assets cannot be 'consumed' or 'complete'
-        if (this.solutionType === 'asset' && ['consumed', 'complete'].includes(value)) return false;
-        
-        return true;
-      },
-      message: props => `Invalid status logic: ${props.value} is not allowed for this ${this.solutionType} configuration.`
-    }
   },
   currentLocation: {
     type: ReferenceSchema,
-    default: null 
+    default: null,
+    validate: {
+    validator: function(value) {
+      const terminalStatuses = ['missing', 'consumed', 'complete'];
+      
+      if (terminalStatuses.includes(this.status)) {
+        // TERMINAL: Location MUST be null
+        return value === null;
+      } else {
+        // ACTIVE: Location MUST be a valid object
+        return value !== null && typeof value === 'object' && value.name;
+      }
+    },
+    message: props => `Location error: ${this.status} items must have ${['missing', 'consumed', 'complete'].includes(this.status) ? 'null' : 'a valid'} location.`
+  }
   },
   lastUpdatedBy: {
     type: ReferenceSchema,
