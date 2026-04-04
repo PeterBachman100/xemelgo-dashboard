@@ -4,6 +4,8 @@ const {
   getItems, 
   getItemById, 
   moveItem, 
+  scanItem,
+  receiveItem,
   consumeItem, 
   completeItem, 
   markMissing 
@@ -11,9 +13,16 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 
 router.use(protect);
+
 router.get('/', getItems);
 router.get('/:id', getItemById);
+
+// Move Items
 router.patch('/:id/move', moveItem);
+router.patch('/:id/scan', scanItem);
+router.patch('/:id/receive', receiveItem);
+
+// Terminal/Status Actions
 router.patch('/:id/consume', consumeItem);
 router.patch('/:id/complete', completeItem);
 router.patch('/:id/mark-missing', markMissing);

@@ -21,24 +21,29 @@ const itemSchema = new mongoose.Schema({
     default: 'active',
     validate: {
       validator: function(value) {
-        // If Active, it MUST have a location
-        if (value === 'active' && !this.currentLocation) {
-          return false;
-        }
+        const hasLocation = !!this.currentLocation;
 
-       if (value === 'consumed' && this.solutionType !== 'inventory') {
-            return false; // Only Inventory can be consumed
-        }
-        if (value === 'complete' && this.solutionType !== 'workOrder') {
-            return false; // Only Work Orders can be completed
-        }
-        if (this.solutionType === 'asset' && (value === 'consumed' || value === 'complete')) {
-            return false;
-        }
+        // Active items MUST have a location (All types)
+        if (value === 'active' && !hasLocation) return false;
+
+        // Missing Assets MUST have null location
+        if (value === 'missing' && this.solutionType === 'asset' && hasLocation) return false;
+
+        // Consumed Inventory MUST have null location
+        if (value === 'consumed' && this.solutionType === 'inventory' && hasLocation) return false;
+
+        // Only Inventory can be 'consumed'
+        if (value === 'consumed' && this.solutionType !== 'inventory') return false;
+        
+        // Only WorkOrders can be 'complete'
+        if (value === 'complete' && this.solutionType !== 'workOrder') return false;
+        
+        // Assets cannot be 'consumed' or 'complete'
+        if (this.solutionType === 'asset' && ['consumed', 'complete'].includes(value)) return false;
         
         return true;
       },
-      message: props => `Invalid status logic: ${props.value} is not allowed for this item configuration.`
+      message: props => `Invalid status logic: ${props.value} is not allowed for this ${this.solutionType} configuration.`
     }
   },
   currentLocation: {

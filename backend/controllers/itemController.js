@@ -1,6 +1,99 @@
 const Item = require('../models/Item');
 const Event = require('../models/Event');
 
+/**
+ * SHARED INTERNAL HELPER (The "Engine")
+ * Handles state change, location nullification, and event logging.
+ */
+const _performStatusUpdate = async (req, res, { 
+  targetStatus, 
+  actionType, 
+  newLocation = null, 
+  allowedTypes = [] 
+}) => {
+  try {
+    const item = await Item.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    // Type Validation
+    if (allowedTypes.length > 0 && !allowedTypes.includes(item.solutionType)) {
+      return res.status(400).json({ 
+        message: `Action '${actionType}' is not allowed for ${item.solutionType}` 
+      });
+    }
+
+    // Apply State Changes
+    item.status = targetStatus;
+    
+    // Logic: If we provide a new location, use it. 
+    // If targetStatus is missing/consumed, schema will nullify, but we'll be explicit here.
+    if (newLocation) {
+      item.currentLocation = { _id: newLocation.id, name: newLocation.name };
+    } else if (['missing', 'consumed'].includes(targetStatus)) {
+      item.currentLocation = null;
+    }
+
+    item.lastUpdatedBy = { _id: req.user._id, name: req.user.name, role: req.user.role };
+    item.lastUpdatedAt = Date.now();
+
+    await item.save();
+
+    // Create Audit Event
+    await Event.create({
+      itemId: item._id,
+      user: { _id: req.user._id, name: req.user.name, role: req.user.role },
+      location: item.currentLocation, // Will be null for missing/consumed
+      action: actionType
+    });
+
+    res.json(item);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// --- PUBLIC CONTROLLERS ---
+
+const moveItem = (req, res) => _performStatusUpdate(req, res, {
+  targetStatus: 'active',
+  actionType: 'moved',
+  newLocation: { id: req.body.newLocationId, name: req.body.newLocationName },
+  allowedTypes: ['asset']
+});
+
+const scanItem = (req, res) => _performStatusUpdate(req, res, {
+  targetStatus: 'active',
+  actionType: 'scanned',
+  newLocation: { id: req.body.newLocationId, name: req.body.newLocationName },
+  allowedTypes: ['inventory']
+});
+
+const receiveItem = (req, res) => _performStatusUpdate(req, res, {
+  targetStatus: 'active',
+  actionType: 'received',
+  newLocation: { id: req.body.newLocationId, name: req.body.newLocationName },
+  allowedTypes: ['workOrder']
+});
+
+const consumeItem = (req, res) => _performStatusUpdate(req, res, {
+  targetStatus: 'consumed',
+  actionType: 'consumed',
+  allowedTypes: ['inventory']
+});
+
+const completeItem = (req, res) => _performStatusUpdate(req, res, {
+  targetStatus: 'complete',
+  actionType: 'completed',
+  allowedTypes: ['workOrder']
+});
+
+const markMissing = (req, res) => _performStatusUpdate(req, res, {
+  targetStatus: 'missing',
+  actionType: 'missing',
+  allowedTypes: ['asset']
+});
+
+
 // @desc    Get all items (with optional filtering)
 // @route   GET /api/items
 const getItems = async (req, res) => {
@@ -46,115 +139,12 @@ const getItemById = async (req, res) => {
   }
 };
 
-
-// @desc    Move item to a new location & record event
-// @route   PATCH /api/items/:id/move
-const moveItem = async (req, res) => {
-  const { newLocationId, newLocationName } = req.body;
-  try {
-    const item = await Item.findById(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Item not found' });
-
-    item.currentLocation = { _id: newLocationId, name: newLocationName };
-    item.lastUpdatedBy = { _id: req.user._id, name: req.user.name, role: req.user.role };
-    item.status = 'active';
-
-    await item.save();
-
-    await Event.create({
-      itemId: item._id,
-      user: { _id: req.user._id, name: req.user.name, role: req.user.role },
-      location: { _id: newLocationId, name: newLocationName },
-      action: item.solutionType === 'asset' ? 'moved' : 'scanned'
-    });
-
-    res.json(item);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
-};
-
-// @desc    Mark item as Consumed (Inventory only)
-// @route   PATCH /api/items/:id/consume
-const consumeItem = async (req, res) => {
-  try {
-    const item = await Item.findById(req.params.id);
-    if (!item || item.solutionType !== 'inventory') {
-      return res.status(400).json({ message: 'Only Inventory can be consumed.' });
-    }
-
-    item.status = 'consumed';
-    item.lastUpdatedBy = { _id: req.user._id, name: req.user.name, role: req.user.role };
-    await item.save();
-
-    await Event.create({
-      itemId: item._id,
-      user: { _id: req.user._id, name: req.user.name, role: req.user.role },
-      location: item.currentLocation,
-      action: 'consumed'
-    });
-
-    res.json(item);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
-// @desc    Mark item as Complete (WorkOrders only)
-// @route   PATCH /api/items/:id/complete
-const completeItem = async (req, res) => {
-  console.log(req.user);
-  try {
-    const item = await Item.findById(req.params.id);
-    if (!item || item.solutionType !== 'workOrder') {
-      return res.status(400).json({ message: 'Only workOrders can be completed.' });
-    }
-
-    item.status = 'complete';
-    item.lastUpdatedBy = { _id: req.user._id, name: req.user.name, role: req.user.role };
-    await item.save();
-
-    await Event.create({
-      itemId: item._id,
-      user: { _id: req.user._id, name: req.user.name, role: req.user.role },
-      location: item.currentLocation,
-      action: 'completed'
-    });
-
-    res.json(item);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
-  }
-};
-
-// @desc    Mark item as Missing
-// @route   PATCH /api/items/:id/mark-missing
-const markMissing = async (req, res) => {
-  try {
-    const item = await Item.findById(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Item not found' });
-
-    item.status = 'missing';
-    item.lastUpdatedBy = { _id: req.user._id, name: req.user.name, role: req.user.role };
-    await item.save();
-
-    await Event.create({
-      itemId: item._id,
-      user: { _id: req.user._id, name: req.user.name, role: req.user.role },
-      location: item.currentLocation,
-      action: 'missing'
-    });
-
-    res.json(item);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error' });
-  }
-};
-
 module.exports = {
   getItems,
   getItemById,
   moveItem,
+  scanItem,
+  receiveItem,
   consumeItem,
   completeItem,
   markMissing
