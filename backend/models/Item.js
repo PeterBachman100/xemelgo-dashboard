@@ -11,28 +11,28 @@ const itemSchema = new mongoose.Schema({
   solutionType: {
     type: String,
     required: true,
-    enum: ['Asset', 'Inventory', 'WorkOrder'],
+    enum: ['asset', 'inventory', 'workOrder'],
     immutable: true 
   },
   status: {
     type: String,
     required: true,
-    enum: ['Active', 'Missing', 'Consumed', 'Complete'],
-    default: 'Active',
+    enum: ['active', 'missing', 'consumed', 'complete'],
+    default: 'active',
     validate: {
       validator: function(value) {
         // If Active, it MUST have a location
-        if (value === 'Active' && !this.currentLocation) {
+        if (value === 'active' && !this.currentLocation) {
           return false;
         }
 
-       if (value === 'Consumed' && this.solutionType !== 'Inventory') {
+       if (value === 'consumed' && this.solutionType !== 'inventory') {
             return false; // Only Inventory can be consumed
         }
-        if (value === 'Complete' && this.solutionType !== 'WorkOrder') {
+        if (value === 'complete' && this.solutionType !== 'workOrder') {
             return false; // Only Work Orders can be completed
         }
-        if (this.solutionType === 'Asset' && (value === 'Consumed' || value === 'Complete')) {
+        if (this.solutionType === 'asset' && (value === 'consumed' || value === 'complete')) {
             return false;
         }
         

@@ -12,7 +12,7 @@ const ReferenceSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['Staff', 'Admin'],
+    enum: ['staff', 'admin'],
     // Optional: Only used when snapshotting a User
     required: false 
   }
