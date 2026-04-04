@@ -15,11 +15,10 @@ import api from "../api/axiosConfig";
 const Dashboard = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [highlightType, setHighlightType] = useState(null);
+  const [highlight, setHighlight] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch all items on mount
   useEffect(() => {
     const fetchItems = async () => {
       try {
@@ -34,7 +33,6 @@ const Dashboard = () => {
     fetchItems();
   }, [location]);
 
-  // Columns definition for MUI DataGrid
   const columns = [
     { field: "name", headerName: "Item Name", flex: 1, fontWeight: "bold" },
     {
@@ -67,21 +65,13 @@ const Dashboard = () => {
         );
       },
     },
-
     { 
-  field: 'currentLocation', 
-  headerName: 'Location', 
-  flex: 1,
-  // MUI DataGrid provides 'row' directly in the params object
-  valueGetter: (value, row) => {
-    // If your version of MUI is 6+, it uses (value, row)
-    // If it's version 5, it uses (params)
-    return row?.currentLocation?.name || 'N/A';
-  },
-  // If the above doesn't work (depending on your MUI version), 
-  // use this bulletproof renderCell approach as a fallback:
-  renderCell: (params) => params.row?.currentLocation?.name || 'N/A'
-},
+      field: 'currentLocation', 
+      headerName: 'Location', 
+      flex: 1,
+      // Fixed valueGetter for nested data
+      valueGetter: (value) => value?.name || 'N/A'
+    },
     {
       field: "actions",
       headerName: "View",
@@ -110,25 +100,38 @@ const Dashboard = () => {
           getRowId={(row) => row._id}
           loading={loading}
           pageSizeOptions={[10, 25, 50]}
+          hideFooterSelectedRowCount
+          disableRowSelectionOnClick
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },
           }}
-          // Requirement 1B: Relational Highlighting Logic
-          onRowMouseEnter={(params) =>
-            setHighlightType(params.row.solutionType)
+          
+          getRowClassName={(params) => 
+            params.row.solutionType === highlight ? 'highlighted-row' : ''
           }
-          onRowMouseLeave={() => setHighlightType(null)}
-          getRowClassName={(params) => {
-            if (!params || !params.row) return "";
-            return params.row.solutionType === highlightType
-              ? "highlighted-row"
-              : "";
+          
+          slotProps={{
+            row: {
+              onMouseEnter: (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                const targetRow = items.find(r => r._id === id);
+                if (targetRow) setHighlight(targetRow.solutionType);
+              },
+              onMouseLeave: () => setHighlight(null),
+              onClick: (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                const targetRow = items.find(r => r._id === id);
+                if (targetRow) setHighlight(targetRow.solutionType);
+              }
+            }
           }}
+          
           sx={{
             border: "none",
             "& .highlighted-row": {
-              bgcolor: "rgba(25, 118, 210, 0.08)", // Light blue highlight
-              transition: "background-color 0.2s ease",
+              bgcolor: "rgba(25, 118, 210, 0.08) !important", // !important ensures it beats default row zebra striping
+              transition: "background-color 0.15s ease",
+              cursor: 'pointer'
             },
             "& .MuiDataGrid-cell:focus": {
               outline: "none",

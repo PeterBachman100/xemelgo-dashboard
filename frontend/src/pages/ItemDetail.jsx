@@ -26,6 +26,8 @@ const ItemDetail = () => {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [locationHighlight, setLocationHighlight] = useState(null);
+  const [userHighlight, setUserHighlight] = useState(null);
 
   // Unified fetch to get item data and available locations
   const fetchData = useCallback(async () => {
@@ -246,7 +248,7 @@ const ItemDetail = () => {
               <Grid item xs={12} sm={6}>
                 <Typography variant="caption" color="textSecondary">Current Location</Typography>
                 <Typography variant="body1" sx={{ color: !item.currentLocation ? 'text.secondary' : 'text.primary' }}>
-                  {item.currentLocation?.name || "N/A (Missing/Consumed)"}
+                  {item.currentLocation?.name || "N/A"}
                 </Typography>
               </Grid>
             </Grid>
@@ -258,10 +260,53 @@ const ItemDetail = () => {
               <DataGrid 
                 rows={locationHistory} 
                 columns={historyColumns} 
-                getRowId={(r) => r._id || Math.random()} 
+                getRowId={(r) => r._id} 
                 density="compact" 
                 hideFooter 
                 autosizeOnMount
+                hideFooterSelectedRowCount
+                disableRowSelectionOnClick
+                
+                getRowClassName={(params) => {
+    // If the row's location ID matches the one in our 'locationHighlight' state
+    return params.row.location?._id === locationHighlight ? 'highlighted-row' : '';
+  }}
+
+  // 2. The "Dashboard Style" Event Listeners
+  slotProps={{
+    row: {
+      onMouseEnter: (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        // Find the specific history entry we are hovering over
+        const targetRow = locationHistory.find(r => r._id === id);
+        // If it has a location object, save that location's _id to state
+        if (targetRow?.location?._id) {
+          setLocationHighlight(targetRow.location._id);
+        }
+      },
+      onMouseLeave: () => setLocationHighlight(null),
+      onClick: (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const targetRow = locationHistory.find(r => r._id === id);
+        if (targetRow?.location?._id) {
+          setLocationHighlight(targetRow.location._id);
+        }
+      }
+    }
+  }}
+
+  sx={{
+    border: "none",
+    "& .highlighted-row": {
+      // Using the same blue highlight style as your main dashboard
+      bgcolor: "rgba(25, 118, 210, 0.12) !important",
+      transition: "background-color 0.15s ease",
+      cursor: 'pointer'
+    },
+    "& .MuiDataGrid-cell:focus": {
+      outline: "none",
+    },
+  }}
               />
             </Box>
 
@@ -274,6 +319,47 @@ const ItemDetail = () => {
                 density="compact" 
                 initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
                 autosizeOnMount
+                hideFooterSelectedRowCount
+                disableRowSelectionOnClick
+                getRowClassName={(params) => {
+    return params.row.user?._id === userHighlight ? 'highlighted-row-user' : '';
+  }}
+
+  // 2. The Dashboard Style Event Listeners
+  slotProps={{
+    row: {
+      onMouseEnter: (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        // Find the specific history entry in the audit array
+        const targetRow = fullActionHistory.find(r => r._id === id);
+        // Save the performing user's _id to state
+        if (targetRow?.user?._id) {
+          setUserHighlight(targetRow.user._id);
+        }
+      },
+      onMouseLeave: () => setUserHighlight(null),
+      onClick: (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        const targetRow = fullActionHistory.find(r => r._id === id);
+        if (targetRow?.user?._id) {
+          setUserHighlight(targetRow.user._id);
+        }
+      }
+    }
+  }}
+
+  sx={{
+    border: "none",
+    // 3. Green tint for User Actions to separate from Blue Location movements
+    "& .highlighted-row-user": {
+      bgcolor: "rgba(76, 175, 80, 0.12) !important",
+      transition: "background-color 0.15s ease",
+      cursor: 'pointer'
+    },
+    "& .MuiDataGrid-cell:focus": {
+      outline: "none",
+    },
+  }}
               />
             </Box>
           </Paper>
