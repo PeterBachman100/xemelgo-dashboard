@@ -17,7 +17,6 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch the list of users for the dropdown
   useEffect(() => {
     const getUsers = async () => {
       try {
@@ -37,7 +36,7 @@ const Login = () => {
     setError('');
     try {
       await login(selectedUser, password);
-      navigate('/'); // Go to dashboard on success
+      navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials');
     }
@@ -52,10 +51,10 @@ const Login = () => {
       <Box sx={{ mt: 15, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Paper elevation={3} sx={{ p: 4, width: '100%', borderRadius: 2 }}>
           <Typography variant="h5" gutterBottom align="center" sx={{ fontWeight: 700 }}>
-            Warehouse Management System
+            Xemelgo
           </Typography>
           <Typography variant="body2" color="textSecondary" align="center" sx={{ mb: 3 }}>
-            Please select your persona to begin
+            Please select user to begin
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -64,7 +63,7 @@ const Login = () => {
             <TextField
               select
               fullWidth
-              label="Select Staff Member"
+              label="Select User"
               value={selectedUser}
               onChange={(e) => setSelectedUser(e.target.value)}
               margin="normal"
@@ -85,7 +84,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               margin="normal"
               required
-              helperText="Hint: 'password' for all seeded users"
+              helperText="Hint: 'asdf' for all seeded users"
             />
 
             <Button

@@ -12,7 +12,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import api from "../api/axiosConfig";
 
-const Dashboard = () => {
+const Items = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [highlight, setHighlight] = useState(null);
@@ -79,7 +79,7 @@ const Dashboard = () => {
       width: 80,
       renderCell: (params) => (
         <Tooltip title="See Details">
-          <IconButton onClick={() => navigate(`/inventory/${params.row._id}`)}>
+          <IconButton onClick={() => navigate(`/items/${params.row._id}`)}>
             <VisibilityIcon color="primary" />
           </IconButton>
         </Tooltip>
@@ -90,7 +90,7 @@ const Dashboard = () => {
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h4" sx={{ mb: 4, fontWeight: 700 }}>
-        Inventory Management
+        Items
       </Typography>
 
       <Paper elevation={2} sx={{ height: 600, width: "100%", borderRadius: 2 }}>
@@ -143,4 +143,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Items;

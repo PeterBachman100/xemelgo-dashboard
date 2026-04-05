@@ -103,39 +103,87 @@ const ItemDetail = () => {
 
   return (
     <Box sx={{ p: 4, width: '100%' }}>
-      <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/")} sx={{ mb: 3 }}>Back</Button>
+      <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/items")} sx={{ mb: 3 }}>Items Overview</Button>
 
       <Grid container spacing={4}>
         {/* LEFT PANEL: INFO & ACTIONS */}
         <Grid item xs={12} md={4} lg={3}> 
-          <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>{item.name}</Typography>
-            <Chip label={item.status.toUpperCase()} color={item.status === "active" ? "success" : "default"} sx={{ mb: 2 }} />
-            
-            <Divider sx={{ mb: 2 }} />
-            
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField select fullWidth label="Target Location" value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)} disabled={isTerminalStatus}>
-                {locations.map((loc) => (<MenuItem key={loc._id} value={loc._id}>{loc.name}</MenuItem>))}
-              </TextField>
+  <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid #e5e7eb' }}>
+    {/* Header Info */}
+    <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>{item.name}</Typography>
+    <Chip 
+      label={item.status.toUpperCase()} 
+      size="small"
+      sx={{ 
+        mb: 3, 
+        fontWeight: 700, 
+        bgcolor: item.status === "active" ? "#ecfdf5" : "#f3f4f6", 
+        color: item.status === "active" ? "#065f46" : "#374151" 
+      }} 
+    />
+    
+    {/* Metadata Rows: Location & Solution Type */}
+    <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+          CURRENT LOCATION
+        </Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {item.currentLocation?.name || "Unknown"}
+        </Typography>
+      </Box>
 
-              {ACTION_CONFIGS[item.solutionType]?.map((cfg) => (
-                <Button
-                  key={cfg.label}
-                  variant={cfg.terminal ? "contained" : "outlined"}
-                  color={cfg.color}
-                  disabled={isTerminalStatus || actionLoading || (cfg.action === 'missing' && item.status === 'missing')}
-                  onClick={() => cfg.terminal ? setConfirmModal({ open: true, action: cfg.action }) : handleAction(cfg.action)}
-                >
-                  {cfg.label}
-                </Button>
-              ))}
-            </Box>
-          </Paper>
-        </Grid>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+          SOLUTION TYPE
+        </Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>
+          {item.solutionType || "Standard"}
+        </Typography>
+      </Box>
+    </Box>
+
+    <Divider sx={{ mb: 3, borderStyle: 'dashed' }} />
+    
+    {/* Actions Section */}
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: -1 }}>Change Location</Typography>
+      <TextField 
+        select 
+        fullWidth 
+        variant="outlined"
+        size="small"
+        value={selectedLocation} 
+        onChange={(e) => setSelectedLocation(e.target.value)} 
+        disabled={isTerminalStatus}
+      >
+        {locations.map((loc) => (
+          <MenuItem key={loc._id} value={loc._id}>{loc.name}</MenuItem>
+        ))}
+      </TextField>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+        {ACTION_CONFIGS[item.solutionType]?.map((cfg) => (
+          <Button
+            key={cfg.label}
+            fullWidth
+            variant={cfg.terminal ? "contained" : "outlined"}
+            color={cfg.color}
+            size="large"
+            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2 }}
+            disabled={isTerminalStatus || actionLoading || (cfg.action === 'missing' && item.status === 'missing')}
+            onClick={() => cfg.terminal ? setConfirmModal({ open: true, action: cfg.action }) : handleAction(cfg.action)}
+          >
+            {cfg.label}
+          </Button>
+        ))}
+      </Box>
+    </Box>
+  </Paper>
+</Grid>
 
         {/* RIGHT PANEL: TWO TABLES */}
-        <Grid item xs={12} md={8} lg={9}>
+        <Grid item xs={12} md={8} lg={9} sx={{flexGrow: 1}}>
           <Paper sx={{ p: 3, borderRadius: 2 }}>
             
             {/* TABLE 1: LOCATION HISTORY */}
