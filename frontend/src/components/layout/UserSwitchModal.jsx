@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 
@@ -6,6 +6,24 @@ const UserSwitchModal = ({ open, onClose, targetUser }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { switchUser } = useAuth();
+
+  const passwordInputRef = useRef(null);
+
+  // 2. Force focus whenever the 'open' state becomes true
+  useEffect(() => {
+    if (open) {
+      // Small timeout ensures the Modal animation has started 
+      // and the DOM element is ready to receive focus.
+      const timer = setTimeout(() => {
+        passwordInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      // Clear password and errors when modal closes
+      setPassword('');
+      setError('');
+    }
+  }, [open]);
 
   const handleConfirm = async () => {
     try {
@@ -24,6 +42,7 @@ const UserSwitchModal = ({ open, onClose, targetUser }) => {
       <DialogContent>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <TextField
+          inputRef={passwordInputRef}
           autoFocus
           margin="dense"
           label="Enter Password"
@@ -32,6 +51,7 @@ const UserSwitchModal = ({ open, onClose, targetUser }) => {
           variant="outlined"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
         />
       </DialogContent>
       <DialogActions>
