@@ -1,22 +1,29 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
-  Button,
-  TextField,
-  MenuItem,
-  Divider,
-  Chip,
-  Alert,
-  CircularProgress,
-  Snackbar
+  Box, Grid, Paper, Typography, Button, TextField, MenuItem,
+  Divider, Chip, Alert, CircularProgress, Snackbar
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import api from "../api/axiosConfig";
+import ActionConfirmModal from "../components/layout/ActionConfirmModal";
+
+// 1. ACTION STRATEGY: Define actions by solutionType
+const ACTION_CONFIGS = {
+  inventory: [
+    { label: "Scan to Shelf", action: "scan", color: "primary" },
+    { label: "Consume Inventory", action: "consume", color: "success", terminal: true },
+  ],
+  workOrder: [
+    { label: "Receive at Station", action: "receive", color: "primary" },
+    { label: "Complete Work Order", action: "complete", color: "primary", terminal: true },
+  ],
+  asset: [
+    { label: "Move Asset", action: "move", color: "primary" },
+    { label: "Mark as Missing", action: "missing", color: "error" },
+  ],
+};
 
 const ItemDetail = () => {
   const { id } = useParams();
@@ -27,18 +34,13 @@ const ItemDetail = () => {
   const [selectedLocation, setSelectedLocation] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  
+  // Highlighting states
   const [locationHighlight, setLocationHighlight] = useState(null);
   const [userHighlight, setUserHighlight] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success", // 'success' | 'error' | 'info' | 'warning'
-  });
-
-  const handleCloseSnackbar = (event, reason) => {
-    if (reason === 'clickaway') return;
-    setSnackbar({ ...snackbar, open: false });
-  };
+  
+  const [confirmModal, setConfirmModal] = useState({ open: false, action: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const fetchData = useCallback(async () => {
     try {
@@ -48,10 +50,7 @@ const ItemDetail = () => {
       ]);
       setItem(itemRes.data);
       setLocations(locRes.data);
-      
-      if (itemRes.data.currentLocation) {
-        setSelectedLocation(itemRes.data.currentLocation._id);
-      }
+      if (itemRes.data.currentLocation) setSelectedLocation(itemRes.data.currentLocation._id);
     } catch (err) {
       console.error("Error fetching detail data", err);
     } finally {
@@ -59,20 +58,13 @@ const ItemDetail = () => {
     }
   }, [id]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleAction = async (actionIntent) => {
     setActionLoading(true);
-
     const endpointMap = {
-      move: "move",
-      scan: "scan",
-      receive: "receive",
-      missing: "mark-missing",
-      consume: "consume",
-      complete: "complete",
+      move: "move", scan: "scan", receive: "receive",
+      missing: "mark-missing", consume: "consume", complete: "complete",
     };
 
     const endpoint = endpointMap[actionIntent];
@@ -85,297 +77,129 @@ const ItemDetail = () => {
 
       await api.patch(`/items/${id}/${endpoint}`, payload);
       await fetchData();
-      
-      setSnackbar({
-        open: true,
-        message: `Action '${actionIntent}' successful.`,
-        severity: "success",
-      });
+      setSnackbar({ open: true, message: `Action '${actionIntent}' successful.`, severity: "success" });
     } catch (err) {
-      console.error("Action failed", err);
-      setSnackbar({
-        open: true,
-        message: err.response?.data?.message || "Action failed.",
-        severity: "error",
-      });
+      setSnackbar({ open: true, message: err.response?.data?.message || "Action failed.", severity: "error" });
     } finally {
       setActionLoading(false);
     }
   };
 
-  if (loading)
-    return (
-      <Box display="flex" justifyContent="center" mt={10}>
-        <CircularProgress />
-      </Box>
-    );
-  
+  if (loading) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress /></Box>;
   if (!item) return <Alert severity="error">Item not found</Alert>;
 
-  const isTerminal = ["consumed", "complete"].includes(item.status);
-  const isMissing = item.status === "missing";
-
-  const locationHistory = item.history || [];
-  const actionHistory = item.history || [];
+  const isTerminalStatus = ["consumed", "complete"].includes(item.status);
+  const history = item.history || [];
 
   const historyColumns = [
-    {
-      field: "createdAt",
-      headerName: "Date/Time",
-      width: 180,
-      valueFormatter: (value) => new Date(value).toLocaleString(),
+    { field: "createdAt", headerName: "Date/Time", width: 180, valueFormatter: (value) => new Date(value).toLocaleString() },
+    { 
+      field: "action", headerName: "Action", width: 150, 
+      renderCell: (p) => <Chip label={p.value.replace("-", " ").toUpperCase()} size="small" variant="outlined" color={p.value === 'missing' ? 'error' : 'default'} /> 
     },
-    {
-      field: "action",
-      headerName: "Action",
-      width: 150,
-      renderCell: (params) => (
-        <Chip
-          label={params.value.replace("-", " ").toUpperCase()}
-          size="small"
-          variant="outlined"
-          color={params.value === 'missing' ? 'error' : 'default'}
-        />
-      ),
-    },
-    {
-      field: "location",
-      headerName: "Location",
-      flex: 1,
-      valueGetter: (params) => params?.name || "N/A",
-      renderCell: (params) => (
-        <Typography variant="body2" color={!params.value || params.value === "N/A" ? "textSecondary" : "textPrimary"}>
-          {params.value || "N/A"}
-        </Typography>
-      )
-    },
-    {
-      field: "user",
-      headerName: "Performed By",
-      width: 150,
-      valueGetter: (value) => value?.name || "System",
-    },
+    { field: "location", headerName: "Location", flex: 1, valueGetter: (p) => p?.name || "N/A" },
+    { field: "user", headerName: "Performed By", width: 150, valueGetter: (v) => v?.name || "System" },
   ];
 
   return (
-    <Box sx={{ p: 4, width: '100%', boxSizing: 'border-box' }}>
-      <Button 
-        startIcon={<ArrowBackIcon />} 
-        onClick={() => navigate("/")} 
-        sx={{ mb: 3 }}
-      >
-        Back to Dashboard
-      </Button>
+    <Box sx={{ p: 4, width: '100%' }}>
+      <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/")} sx={{ mb: 3 }}>Back</Button>
 
       <Grid container spacing={4}>
-        
-        {/* LEFT COLUMN */}
+        {/* LEFT PANEL: INFO & ACTIONS */}
         <Grid item xs={12} md={4} lg={3}> 
-          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: 'fit-content' }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>{item.name}</Typography>
-              <Chip
-                label={item.status.toUpperCase()}
-                color={item.status === "active" ? "success" : "default"}
-              />
-            </Box>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="caption" color="textSecondary">Solution Type</Typography>
-                <Typography variant="body1" sx={{ textTransform: "capitalize" }}>{item.solutionType}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="caption" color="textSecondary">Current Location</Typography>
-                <Typography variant="body1" sx={{ color: !item.currentLocation ? 'text.secondary' : 'text.primary' }}>
-                  {item.currentLocation?.name || "N/A"}
-                </Typography>
-              </Grid>
-            </Grid>
-            <Divider sx={{ mb: 3 }} />
-
-            {isMissing && (
-              <Alert severity="error" sx={{ mb: 3 }}>
-                Item is MISSING. Update location to recover.
-              </Alert>
-            )}
-
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>{item.name}</Typography>
+            <Chip label={item.status.toUpperCase()} color={item.status === "active" ? "success" : "default"} sx={{ mb: 2 }} />
+            
+            <Divider sx={{ mb: 2 }} />
+            
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <TextField
-                select
-                fullWidth
-                label="Target Location"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                disabled={isTerminal}
-              >
-                {locations.map((loc) => (
-                  <MenuItem key={loc._id} value={loc._id}>{loc.name}</MenuItem>
-                ))}
+              <TextField select fullWidth label="Target Location" value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)} disabled={isTerminalStatus}>
+                {locations.map((loc) => (<MenuItem key={loc._id} value={loc._id}>{loc.name}</MenuItem>))}
               </TextField>
 
-              {/* Primary Movement Button: Maps to semantic intent */}
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={() => handleAction(
-                  item.solutionType === "inventory" ? "scan" : 
-                  item.solutionType === "workOrder" ? "receive" : "move"
-                )}
-                disabled={isTerminal || actionLoading}
-              >
-                {isMissing ? "Found & Relocate" : 
-                 item.solutionType === "inventory" ? "Scan to Shelf" : 
-                 item.solutionType === "workOrder" ? "Receive at Station" : "Move Asset"}
-              </Button>
-
-              {/* Mark Missing: Only for Assets */}
-              {item.solutionType === "asset" && (
+              {ACTION_CONFIGS[item.solutionType]?.map((cfg) => (
                 <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={() => handleAction("missing")}
-                  disabled={isTerminal || isMissing || actionLoading}
+                  key={cfg.label}
+                  variant={cfg.terminal ? "contained" : "outlined"}
+                  color={cfg.color}
+                  disabled={isTerminalStatus || actionLoading || (cfg.action === 'missing' && item.status === 'missing')}
+                  onClick={() => cfg.terminal ? setConfirmModal({ open: true, action: cfg.action }) : handleAction(cfg.action)}
                 >
-                  Mark as Missing
+                  {cfg.label}
                 </Button>
-              )}
-
-              <Divider />
-
-              {/* Terminal Actions */}
-              {(item.solutionType === "inventory" || item.solutionType === "workOrder") && (
-                <Button
-                  variant="contained"
-                  color={item.solutionType === "workOrder" ? "primary" : "success"}
-                  onClick={() => handleAction(item.solutionType === "workOrder" ? "complete" : "consume")}
-                  disabled={isTerminal || isMissing || actionLoading}
-                >
-                  {item.solutionType === "workOrder" ? "Complete Work Order" : "Consume Inventory"}
-                </Button>
-              )}
+              ))}
             </Box>
           </Paper>
         </Grid>
 
-        {/* RIGHT COLUMN: INFO & HISTORY */}
-        <Grid item xs={12} md={8} lg={9} sx={{flexGrow: 1}}>
-          <Paper elevation={1} sx={{ p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>Location History</Typography>
-            <Box sx={{ height: 350, mb: 4, width: '100%' }}>
+        {/* RIGHT PANEL: TWO TABLES */}
+        <Grid item xs={12} md={8} lg={9}>
+          <Paper sx={{ p: 3, borderRadius: 2 }}>
+            
+            {/* TABLE 1: LOCATION HISTORY */}
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>Location History (Relational)</Typography>
+            <Box sx={{ height: 350, mb: 4 }}>
               <DataGrid 
-                rows={locationHistory} 
+                rows={history} 
                 columns={historyColumns} 
                 getRowId={(r) => r._id} 
-                density="compact" 
-                hideFooter 
-                autosizeOnMount
-                hideFooterSelectedRowCount
-                disableRowSelectionOnClick
-                
-                getRowClassName={(params) => {
-                  return params.row.location?._id === locationHighlight ? 'highlighted-row' : '';
-                }}
-
-                // 2. The "Dashboard Style" Event Listeners
+                density="compact"
+                hideFooter
+                getRowClassName={(params) => params.row.location?._id === locationHighlight ? 'highlighted-row-loc' : ''}
                 slotProps={{
                   row: {
                     onMouseEnter: (e) => {
-                      const id = e.currentTarget.getAttribute('data-id');
-                      const targetRow = locationHistory.find(r => r._id === id);
-                      if (targetRow?.location?._id) {
-                        setLocationHighlight(targetRow.location._id);
-                      }
+                      const row = history.find(r => r._id === e.currentTarget.getAttribute('data-id'));
+                      if (row?.location?._id) setLocationHighlight(row.location._id);
                     },
-                    onMouseLeave: () => setLocationHighlight(null),
-                    onClick: (e) => {
-                      const id = e.currentTarget.getAttribute('data-id');
-                      const targetRow = locationHistory.find(r => r._id === id);
-                      if (targetRow?.location?._id) {
-                        setLocationHighlight(targetRow.location._id);
-                      }
-                    }
+                    onMouseLeave: () => setLocationHighlight(null)
                   }
                 }}
-
-                sx={{
-                  border: "none",
-                  "& .highlighted-row": {
-                    bgcolor: "rgba(25, 118, 210, 0.12) !important",
-                    transition: "background-color 0.15s ease",
-                    cursor: 'pointer'
-                  },
-                  "& .MuiDataGrid-cell:focus": {
-                    outline: "none",
-                  },
-                }}
+                sx={{ "& .highlighted-row-loc": { bgcolor: "rgba(25, 118, 210, 0.12) !important" } }}
               />
             </Box>
 
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>Full Action Audit</Typography>
-            <Box sx={{ height: 350, width: '100%' }}>
+            {/* TABLE 2: ACTION AUDIT */}
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>Full Action Audit (User-Based)</Typography>
+            <Box sx={{ height: 350 }}>
               <DataGrid 
-                rows={actionHistory} 
+                rows={history} 
                 columns={historyColumns} 
-                getRowId={(r) => r._id || Math.random()} 
-                density="compact" 
-                initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
-                autosizeOnMount
-                hideFooterSelectedRowCount
-                disableRowSelectionOnClick
-                getRowClassName={(params) => {
-                  return params.row.user?._id === userHighlight ? 'highlighted-row' : '';
-                }}
+                getRowId={(r) => r._id} 
+                density="compact"
+                initialState={{ pagination: { paginationModel: { pageSize: 5 } } }}
+                getRowClassName={(params) => params.row.user?._id === userHighlight ? 'highlighted-row-user' : ''}
                 slotProps={{
                   row: {
                     onMouseEnter: (e) => {
-                      const id = e.currentTarget.getAttribute('data-id');
-                      const targetRow = actionHistory.find(r => r._id === id);
-                      if (targetRow?.user?._id) {
-                        setUserHighlight(targetRow.user._id);
-                      }
+                      const row = history.find(r => r._id === e.currentTarget.getAttribute('data-id'));
+                      if (row?.user?._id) setUserHighlight(row.user._id);
                     },
-                    onMouseLeave: () => setUserHighlight(null),
-                    onClick: (e) => {
-                      const id = e.currentTarget.getAttribute('data-id');
-                      const targetRow = actionHistory.find(r => r._id === id);
-                      if (targetRow?.user?._id) {
-                        setUserHighlight(targetRow.user._id);
-                      }
-                    }
+                    onMouseLeave: () => setUserHighlight(null)
                   }
                 }}
-
-                sx={{
-                  border: "none",
-                  "& .highlighted-row": {
-                    bgcolor: "rgba(25, 118, 210, 0.12) !important",
-                    transition: "background-color 0.15s ease",
-                    cursor: 'pointer'
-                  },
-                  "& .MuiDataGrid-cell:focus": {
-                    outline: "none",
-                  },
-                }}
+                sx={{ "& .highlighted-row-user": { bgcolor: "rgba(76, 175, 80, 0.12) !important" } }}
               />
             </Box>
           </Paper>
         </Grid>
       </Grid>
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} // Professional 'Toast' position
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
-          variant="filled" 
-          sx={{ width: '100%', boxShadow: 3 }}
-        >
-          {snackbar.message}
-        </Alert>
+
+      <ActionConfirmModal 
+        open={confirmModal.open} 
+        action={confirmModal.action} 
+        onClose={() => setConfirmModal({ open: false, action: null })} 
+        onConfirm={() => {
+          const a = confirmModal.action;
+          setConfirmModal({ open: false, action: null });
+          handleAction(a);
+        }} 
+      />
+
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
       </Snackbar>
     </Box>
   );
