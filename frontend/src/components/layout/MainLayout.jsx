@@ -2,30 +2,34 @@ import { Box, CssBaseline, Typography } from "@mui/material";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-
-const routeConfig = {
-  "/": "Home",
-  "/items": "Items",
-  "/locations": "Locations",
-  "/users": "Users",
-  "/events": "Events",
-};
+import { formatLabel } from "../../utils/stringUtils";
 
 const MainLayout = () => {
-
   const location = useLocation();
-  
-  const currentPath = Object.keys(routeConfig).find(path => 
-    location.pathname === path || location.pathname.startsWith(path + '/')
-  );
-  const pageTitle = routeConfig[currentPath] || "Dashboard";
+
+  // Dynamically generate the title from the path
+  // e.g., "/work-orders/123" -> "Work Orders"
+  const getPageTitle = () => {
+    const pathSegments = location.pathname.split("/").filter(Boolean);
+    if (pathSegments.length === 0) return "Dashboard";
+    
+    // We take the first segment and format it (e.g. "work-orders" -> "Work Orders")
+    return formatLabel(pathSegments[0]);
+  };
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f9fafb" }}>
+    <Box 
+      sx={{ 
+        display: "flex", 
+        minHeight: "100vh", 
+        bgcolor: "background.default" 
+      }}
+    >
       <CssBaseline />
       <Sidebar />
       <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <Header /> 
+        
         <Box sx={{ px: { xs: 2, md: 4 }, pb: 2 }}>
           <Typography 
             variant="h4" 
@@ -35,7 +39,7 @@ const MainLayout = () => {
               color: 'text.primary' 
             }}
           >
-            {pageTitle}
+            {getPageTitle()}
           </Typography>
         </Box>
 

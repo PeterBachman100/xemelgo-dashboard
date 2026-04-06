@@ -1,39 +1,33 @@
 import React from 'react';
 import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogContentText, 
-  DialogActions, 
-  Button, 
-  Box 
+  Dialog, DialogTitle, DialogContent, DialogContentText, 
+  DialogActions, Button 
 } from '@mui/material';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { TOKENS, ACTION_MAP } from '../../theme/tokens';
+import { formatLabel } from '../../utils/stringUtils';
 
 const ActionConfirmModal = ({ open, onClose, onConfirm, action }) => {
-  // Configuration for terminal states only
+  // Derive styling directly from our Action Map
+  const token = ACTION_MAP[action];
+
+  // Simplified config focused purely on custom text
   const actionConfigs = {
     consume: {
-      title: "Confirm Consumption",
-      text: "Are you sure you want to consume this item? This action is permanent and will remove the item from active inventory tracking.",
-      color: "error",
-      icon: <WarningAmberIcon color="error" />,
-      buttonText: "Confirm Consumption"
+      text: "Are you sure you want to consume this inventory? This action is permanent.",
+      buttonText: "Confirm Consumption",
     },
     complete: {
-      title: "Mark as Completed",
-      text: "Setting this item to 'Completed' signifies all work is finished. This moves the item to a terminal history state.",
-      color: "success",
-      icon: <CheckCircleOutlineIcon color="success" />,
-      buttonText: "Mark Completed"
+      text: "Are you sure you want to complete this work order? This action is permanent.",
+      buttonText: "Mark Completed",
+    },
+    missing: {
+      text: "Are you sure you want to flag this item as missing? This will trigger an alert.",
+      buttonText: "Flag as Missing",
     }
   };
 
-  // Identify current config or return null if action isn't terminal (like 'missing')
-  const current = actionConfigs[action];
-
-  if (!current) return null;
+  const config = actionConfigs[action];
+  if (!config || !token) return null;
 
   return (
     <Dialog 
@@ -42,37 +36,58 @@ const ActionConfirmModal = ({ open, onClose, onConfirm, action }) => {
       maxWidth="xs" 
       fullWidth
       PaperProps={{
-        sx: { borderRadius: 2, px: 1, py: 1 }
+        sx: { borderRadius: 3, p: 1 } 
       }}
     >
-      <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        {current.icon}
-        {current.title}
+      <DialogTitle sx={{ 
+        fontWeight: 800, 
+        // Simple title, colored based on action severity
+        color: token.text 
+      }}>
+        Confirm {formatLabel(action)}
       </DialogTitle>
 
       <DialogContent>
         <DialogContentText sx={{ color: 'text.primary', fontSize: '0.95rem' }}>
-          {current.text}
+          {config.text}
         </DialogContentText>
       </DialogContent>
 
-      <DialogActions sx={{ pb: 2, px: 3, gap: 1 }}>
+      <DialogActions 
+        sx={{ 
+          pb: 2, 
+          px: 3, 
+          gap: 2, // Slightly increased gap for centered layout
+          // Center the actions horizontally
+          justifyContent: 'center' 
+        }}
+      >
         <Button 
           onClick={onClose} 
-          variant="outlined" 
-          color="inherit" 
-          sx={{ textTransform: 'none', fontWeight: 600 }}
+          sx={{ 
+            textTransform: 'none', 
+            fontWeight: 600, 
+            color: TOKENS.neutral.text 
+          }}
         >
           Cancel
         </Button>
         <Button 
           onClick={onConfirm} 
           variant="contained" 
-          color={current.color}
           autoFocus
-          sx={{ textTransform: 'none', fontWeight: 600, px: 3 }}
+          sx={{ 
+            textTransform: 'none', 
+            fontWeight: 700, 
+            px: 3,
+            borderRadius: 2,
+            bgcolor: token.main,
+            '&:hover': {
+              bgcolor: token.text // Darker shade for hover feedback
+            }
+          }}
         >
-          {current.buttonText}
+          {config.buttonText}
         </Button>
       </DialogActions>
     </Dialog>

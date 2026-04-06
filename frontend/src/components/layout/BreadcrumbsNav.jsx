@@ -1,16 +1,9 @@
 import React from "react";
-import { Breadcrumbs, Link, Typography } from "@mui/material";
+import { Breadcrumbs, Link, Typography, alpha } from "@mui/material";
 import { useLocation, Link as RouterLink } from "react-router-dom";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-
-// Map your paths to the labels you want shown in the UI
-const breadcrumbNameMap = {
-  "/items": "Items",
-  "/locations": "Locations",
-  "/users": "Users",
-  "/events": "Events",
-  "/home": "Overview",
-};
+import { formatLabel } from "../../utils/stringUtils";
+import { TOKENS } from "../../theme/tokens";
 
 const BreadcrumbsNav = () => {
   const location = useLocation();
@@ -18,23 +11,51 @@ const BreadcrumbsNav = () => {
 
   return (
     <Breadcrumbs 
-      separator={<NavigateNextIcon fontSize="small" />} 
-      sx={{ '& .MuiBreadcrumbs-li': { fontSize: '0.875rem' } }}
+      separator={
+        <NavigateNextIcon 
+          sx={{ 
+            fontSize: "1.1rem", 
+            color: TOKENS.neutral.main, 
+            opacity: 0.5 
+          }} 
+        />
+      } 
+      sx={{ 
+        '& .MuiBreadcrumbs-li': { 
+          fontSize: '0.85rem',
+          letterSpacing: '0.01em'
+        } 
+      }}
     >
-      <Link component={RouterLink} underline="hover" color="inherit" to="/">
+      {/* Root Link */}
+      <Link 
+        component={RouterLink} 
+        underline="hover" 
+        to="/"
+        sx={{ 
+          color: TOKENS.neutral.text,
+          fontWeight: 500,
+          transition: 'color 0.2s',
+          "&:hover": { color: "primary.main" }
+        }}
+      >
         Dashboard
       </Link>
       
       {pathnames.map((value, index) => {
-        const last = index === pathnames.length - 1;
+        const isLast = index === pathnames.length - 1;
         const to = `/${pathnames.slice(0, index + 1).join("/")}`;
-        const label = breadcrumbNameMap[to] || value;
+        
+        // Use our utility to handle "work-orders" -> "Work Orders"
+        const label = formatLabel(value);
 
-        return last ? (
+        return isLast ? (
           <Typography 
             key={to} 
-            color="text.primary" 
-            sx={{ fontWeight: 700, textTransform: "capitalize" }}
+            sx={{ 
+              fontWeight: 700, // Bold current page
+              color: "text.primary",
+            }}
           >
             {label}
           </Typography>
@@ -43,9 +64,13 @@ const BreadcrumbsNav = () => {
             key={to} 
             component={RouterLink} 
             underline="hover" 
-            color="inherit" 
-            sx={{ textTransform: "capitalize" }} 
             to={to}
+            sx={{ 
+              color: TOKENS.neutral.text,
+              fontWeight: 500,
+              transition: 'color 0.2s',
+              "&:hover": { color: "primary.main" }
+            }}
           >
             {label}
           </Link>

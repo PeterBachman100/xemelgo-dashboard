@@ -2,11 +2,15 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box, Grid, Paper, Typography, Button, TextField, MenuItem,
-  Divider, Chip, Alert, CircularProgress, Snackbar
+  Divider, Alert, CircularProgress
 } from "@mui/material";
 import AppDataGrid from "../components/common/AppDataGrid";
 import api from "../api/axiosConfig";
 import ActionConfirmModal from "../components/layout/ActionConfirmModal";
+import StatusChip from "../components/common/StatusChip";
+import ActionChip from "../components/common/ActionChip";
+import { formatLabel } from "../utils/stringUtils";
+import { useNotify } from "../components/common/NotificationWrapper";
 
 const ACTION_CONFIGS = {
   inventory: [
@@ -19,21 +23,20 @@ const ACTION_CONFIGS = {
   ],
   asset: [
     { label: "Move", action: "move", color: "primary" },
-    { label: "Mark as Missing", action: "missing", color: "error" },
+    { label: "Missing", action: "missing", color: "error" },
   ],
 };
 
 const ItemDetail = () => {
   const { id } = useParams();
+  const notify = useNotify();
 
   const [item, setItem] = useState(null);
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  
   const [confirmModal, setConfirmModal] = useState({ open: false, action: null });
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const fetchData = useCallback(async () => {
     try {
@@ -64,15 +67,31 @@ const ItemDetail = () => {
     const targetLocation = locations.find((l) => l._id === selectedLocation);
 
     try {
-      const payload = ["move", "scan", "receive"].includes(endpoint) 
+      const isLocationAction = ["move", "scan", "receive"].includes(actionIntent);
+      const payload = isLocationAction 
         ? { newLocationId: selectedLocation, newLocationName: targetLocation?.name }
         : {};
 
       await api.patch(`/items/${id}/${endpoint}`, payload);
+      
+      // Refresh local data
       await fetchData();
-      setSnackbar({ open: true, message: `'${actionIntent}' succesful.`, severity: "success" });
+
+      // Trigger the descriptive notification
+      // We pass the updated location to the notify helper if it's a location action
+      const notificationData = {
+        ...item,
+        location: isLocationAction ? targetLocation?.name : item.currentLocation?.name
+      };
+      
+      notify(actionIntent, notificationData);
     } catch (err) {
-      setSnackbar({ open: true, message: err.response?.data?.message || "Action failed.", severity: "error" });
+      // Use the error severity for failures
+      const errorMessage = err.response?.data?.message || `Failed to ${actionIntent} item.`;
+      
+      // We pass a dummy 'error' action to the notify system or handle manually
+      // Since our notify system is built for success, we can pass a special 'error' flag
+      notify('error', { name: item.name, message: errorMessage });
     } finally {
       setActionLoading(false);
     }
@@ -84,45 +103,13 @@ const ItemDetail = () => {
   const isTerminalStatus = ["consumed", "complete"].includes(item.status);
   const history = item.history || [];
 
- const fullColumns = [
-  { 
-    field: "location", 
-    headerName: "Location", 
-    flex: 1, 
-    valueGetter: (value) => value?.name || "N/A" 
-  },
-  { 
-    field: "action", 
-    headerName: "Action", 
-    width: 150, 
-    renderCell: (p) => (
-      <Chip 
-        label={p.value?.replace("-", " ").toUpperCase()} 
-        size="small" 
-        variant="outlined" 
-        color={p.value === 'missing' ? 'error' : 'default'} 
-      />
-    )
-  },
-  { 
-    field: "user", 
-    headerName: "Performed By", 
-    width: 150, 
-    valueGetter: (value) => value?.name || "System" 
-  },
-  { 
-    field: "createdAt", 
-    headerName: "Time", 
-    width: 180, 
-    valueFormatter: (value) => {
-      if (!value) return "N/A";
-      return new Date(value).toLocaleString([], { 
-        dateStyle: 'short', 
-        timeStyle: 'short' 
-      });
-    }
-  },
-];
+  // Table Columns
+  const fullColumns = [
+    { field: "location", headerName: "Location", flex: 1, valueGetter: (v) => v?.name || "N/A" },
+    { field: "action", headerName: "Action", width: 150, renderCell: (p) => <ActionChip action={p.value} /> },
+    { field: "user", headerName: "Performed By", width: 150, valueGetter: (v) => v?.name || "N/A" },
+    { field: "createdAt", headerName: "Time", width: 180, valueFormatter: (v) => new Date(v).toLocaleString([], { timeStyle: 'short', dateStyle: 'short' }) },
+  ];
 
   const locationColumns = [
     { field: "location", headerName: "Location", flex: 1, valueGetter: (p) => p?.name || "N/A" },
@@ -130,64 +117,59 @@ const ItemDetail = () => {
   ];
 
   const actionColumns = [
-    { field: "user", headerName: "Performed By", width: 150, valueGetter: (v) => v?.name || "System" },
-    { 
-      field: "action", headerName: "Action", width: 150, 
-      renderCell: (p) => <Chip label={p.value.replace("-", " ").toUpperCase()} size="small" variant="outlined" color={p.value === 'missing' ? 'error' : 'default'} /> 
-    },
-    { field: "createdAt", headerName: "Date/Time", width: 180, valueFormatter: (value) => new Date(value).toLocaleString() },
+    { field: "user", headerName: "Performed By", width: 150, valueGetter: (v) => v?.name || "N/A" },
+    { field: "action", headerName: "Action", width: 150, renderCell: (p) => <ActionChip action={p.value} /> },
+    { field: "createdAt", headerName: "Time", width: 180, valueFormatter: (v) => new Date(v).toLocaleString([], { timeStyle: 'short', dateStyle: 'short' }) },
   ];
 
   return (
     <Box sx={{ p: 2, width: "100%" }}>
-      <Grid container spacing={2}>
-
-        {/* LEFT PANEL: INFO & ACTIONS */}
-        <Grid size={{ xs: 12, md: 4, lg: 3 }}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
+      <Grid container spacing={3}>
+        {/* LEFT PANEL */}
+        <Grid item xs={12} md={4} lg={3}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper' }}>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>{item.name}</Typography>
-            <Chip 
-              label={item.status.toUpperCase()} 
-              size="small" 
-              sx={{ mb: 3, fontWeight: 700, bgcolor: item.status === "active" ? "#ecfdf5" : "#f3f4f6", color: item.status === "active" ? "#065f46" : "#374151" }} 
-            />
+            <StatusChip status={item.status} sx={{ mb: 3 }} />
             
             <Box sx={{ mb: 3, display: "flex", flexDirection: "column", gap: 1.5 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1.5 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>CURRENT LOCATION</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.currentLocation?.name || "Unknown"}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.currentLocation?.name || "N/A"}</Typography>
               </Box>
-              <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1.5 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>SOLUTION TYPE</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, textTransform: "capitalize" }}>{item.solutionType || "Standard"}</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>{formatLabel(item.solutionType)}</Typography>
               </Box>
             </Box>
 
             <Divider sx={{ mb: 3, borderStyle: "dashed" }} />
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: -1 }}>Change Location</Typography>
-              <TextField select fullWidth variant="outlined" size="small" value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)} disabled={isTerminalStatus}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Change Location</Typography>
+              <TextField 
+                select 
+                fullWidth 
+                variant="outlined" 
+                size="small" 
+                value={selectedLocation} 
+                onChange={(e) => setSelectedLocation(e.target.value)} 
+                disabled={isTerminalStatus}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              >
                 {locations.map((loc) => (<MenuItem key={loc._id} value={loc._id}>{loc.name}</MenuItem>))}
               </TextField>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3}}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
                 {ACTION_CONFIGS[item.solutionType]?.map((cfg) => (
                   <Button
                     key={cfg.label}
                     fullWidth
-                    variant="outlined"
+                    variant={cfg.terminal ? "outlined" : "contained"}
                     color={cfg.color}
                     size="large"
                     sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
                     disabled={isTerminalStatus || actionLoading || (cfg.action === "missing" && item.status === "missing")}
-                    onClick={() => {
-                      if (cfg.terminal) {
-                        setConfirmModal({ open: true, action: cfg.action });
-                      } else {
-                        handleAction(cfg.action);
-                      }
-                    }}
+                    onClick={() => cfg.terminal ? setConfirmModal({ open: true, action: cfg.action }) : handleAction(cfg.action)}
                   >
                     {cfg.label}
                   </Button>
@@ -197,9 +179,9 @@ const ItemDetail = () => {
           </Paper>
         </Grid>
 
-        {/* RIGHT PANEL: TABLES */}
-        <Grid size={{ xs: 12, md: 8, lg: 9 }} container spacing={2}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
+        {/* RIGHT PANEL */}
+        <Grid item xs={12} md={8} lg={9} container spacing={2}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Location History</Typography>
             <AppDataGrid 
               rows={history} 
@@ -209,7 +191,7 @@ const ItemDetail = () => {
               initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
             />
           </Paper>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Action History</Typography>
             <AppDataGrid 
               rows={history} 
@@ -219,7 +201,7 @@ const ItemDetail = () => {
               initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
             />
           </Paper>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Full History</Typography>
             <AppDataGrid 
               rows={history} 
@@ -241,9 +223,6 @@ const ItemDetail = () => {
           handleAction(a); 
         }} 
       />
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
-        <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>
-      </Snackbar>
     </Box>
   );
 };

@@ -1,7 +1,7 @@
 import React from "react";
 import { 
   Drawer, List, ListItem, ListItemButton, ListItemIcon, 
-  ListItemText, Typography, Box, Divider, ButtonBase 
+  ListItemText, Typography, Box, Divider, ButtonBase, alpha 
 } from "@mui/material";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
@@ -9,6 +9,7 @@ import InventoryIcon from "@mui/icons-material/Inventory";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import PeopleIcon from "@mui/icons-material/People";
 import EventNoteIcon from "@mui/icons-material/EventNote";
+import { LAYOUT } from "../../theme/tokens";
 
 const drawerWidth = 200;
 
@@ -33,25 +34,32 @@ const Sidebar = () => {
         [`& .MuiDrawer-paper`]: { 
           width: drawerWidth, 
           boxSizing: "border-box",
-          borderRight: "1px solid #e5e7eb", 
-          bgcolor: "#ffffff"
+          // Using theme variables for borders and background
+          borderRight: (theme) => `1px solid ${theme.palette.divider}`, 
+          bgcolor: "background.paper"
         },
       }}
     >
-      <Box sx={{ p: 2 }}>
+      <Box 
+        sx={{ 
+          height: LAYOUT.headerHeight, 
+          display: 'flex', 
+          alignItems: 'center', 
+          px: 2 // Adjusted slightly to account for ButtonBase internal padding
+        }}
+      >
         <ButtonBase
           component={Link}
           to="/"
           sx={{
             display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
+            alignItems: "center",
             width: "100%",
-            p: 1,
-            borderRadius: 1,
+            p: 1, // Provides a nice hit-box for the link
+            borderRadius: 2,
             transition: "background-color 0.2s",
             "&:hover": {
-              bgcolor: "rgba(25, 118, 210, 0.04)", 
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04), 
             },
           }}
         >
@@ -60,7 +68,8 @@ const Sidebar = () => {
             sx={{ 
               fontWeight: 800, 
               color: "primary.main",
-              letterSpacing: "-0.02em" 
+              letterSpacing: "-0.02em",
+              lineHeight: 1 // Keeps it perfectly centered in the fixed-height box
             }}
           >
             XEMELGO
@@ -69,28 +78,44 @@ const Sidebar = () => {
       </Box>
       <Divider />
       <List sx={{ px: 2, py: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              onClick={() => navigate(item.path)}
-              selected={location.pathname === item.path}
-              sx={{
-                borderRadius: 2,
-                "&.Mui-selected": {
-                  bgcolor: "rgba(25, 118, 210, 0.08)",
-                  color: "primary.main",
-                  "& .MuiListItemIcon-root": { color: "primary.main" },
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: 600 }} 
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        {menuItems.map((item) => {
+          // Check if current path matches item path
+          const isSelected = location.pathname === item.path || 
+                           (item.path !== '/' && location.pathname.startsWith(item.path));
+
+          return (
+            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                onClick={() => navigate(item.path)}
+                selected={isSelected}
+                sx={{
+                  borderRadius: 2,
+                  "&.Mui-selected": {
+                    // Syncing the active state with our primary brand color
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                    color: "primary.main",
+                    "& .MuiListItemIcon-root": { color: "primary.main" },
+                    "&:hover": {
+                      bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+                    }
+                  },
+                  "&:hover": {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                  }
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText 
+                  primary={item.text} 
+                  primaryTypographyProps={{ 
+                    fontSize: "0.9rem", 
+                    fontWeight: isSelected ? 700 : 500 // Bolder text for active state
+                  }} 
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
     </Drawer>
   );

@@ -1,28 +1,52 @@
 import React, { useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
+import { Box, alpha } from '@mui/material';
+import { TOKENS } from '../../theme/tokens';
 
 const AppDataGrid = ({ rows, columns, getHighlightValue, sx, ...props }) => {
   const [activeHighlight, setActiveHighlight] = useState(null);
 
-  const HIGHLIGHT_COLOR = "rgba(25, 118, 210, 0.12)";
+  // 1. Automatically wrap renderCell content for vertical/horizontal centering
+  const enhancedColumns = columns.map((col) => {
+    if (col.renderCell) {
+      const originalRenderCell = col.renderCell;
+      return {
+        ...col,
+        renderCell: (params) => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              height: '100%',
+              width: '100%',
+              // Center horizontally if align: 'center' is set in column config
+              justifyContent: col.align === 'center' ? 'center' : 'flex-start',
+            }}
+          >
+            {originalRenderCell(params)}
+          </Box>
+        ),
+      };
+    }
+    return col;
+  });
 
   return (
     <DataGrid
       rows={rows}
-      columns={columns}
+      columns={enhancedColumns}
       disableRowSelectionOnClick
       autoHeight
-      pageSizeOptions={[5, 10, 25]}
+      pageSizeOptions={[5, 10, 25, 50]}
       getRowClassName={(params) => {
         if (!getHighlightValue || !activeHighlight) return '';
         return getHighlightValue(params.row) === activeHighlight ? 'app-row-highlight' : '';
       }}
-      showToolbar
       slotProps={{
         toolbar: {
-            csvOptions: { disableToolbarButton: true }, 
-            printOptions: { disableToolbarButton: true },
-            showQuickFilter: true,
+          csvOptions: { disableToolbarButton: true },
+          printOptions: { disableToolbarButton: true },
+          showQuickFilter: true,
         },
         row: {
           onMouseEnter: (e) => {
@@ -40,14 +64,32 @@ const AppDataGrid = ({ rows, columns, getHighlightValue, sx, ...props }) => {
       sx={{
         width: '100%',
         minHeight: 200,
-        border: '1px solid #e5e7eb',
-        borderRadius: 2,
+        bgcolor: 'background.paper',
+        borderRadius: 3,
+        border: (theme) => `1px solid ${theme.palette.divider}`,
+        
+        // Header Styling
         '& .MuiDataGrid-columnHeaders': { 
-          bgcolor: '#f9fafb',
+          bgcolor: (theme) => theme.palette.grey[50],
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
           fontWeight: 700 
         },
+
+        // Cell & Row Styling
+        '& .MuiDataGrid-cell': {
+          borderBottom: (theme) => `1px solid ${theme.palette.grey[100]}`,
+          // Ensure default text cells also center vertically
+          display: 'flex',
+          alignItems: 'center',
+        },
+
+        // Remove annoying focus outlines
+        '& .MuiDataGrid-cell:focus': { outline: 'none' },
+        '& .MuiDataGrid-columnHeader:focus': { outline: 'none' },
+
+        // Highlight Logic
         "& .app-row-highlight": { 
-          bgcolor: `${HIGHLIGHT_COLOR} !important`,
+          bgcolor: (theme) => `${alpha(theme.palette.primary.main, 0.08)} !important`,
           cursor: 'pointer',
           transition: 'background-color 0.1s ease'
         },

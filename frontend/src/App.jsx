@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './components/common/NotificationWrapper';
 
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -20,26 +21,28 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
+        <NotificationProvider>
+          <BrowserRouter>
+            <Routes>
 
-            <Route path="/login" element={<Login />} />
+              <Route path="/login" element={<Login />} />
 
-            <Route element={<ProtectedRoute />}>
-              <Route element={<MainLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path='/items' element={<Items />} />
-                <Route path='/items/:id' element={<ItemDetail />} />
-                <Route path="/locations" element={<Locations />} />
-                <Route path="/events" element={<Events />} />
-                <Route path="/users" element={<Users />} />
+              <Route element={<ProtectedRoute />}>
+                <Route element={<MainLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path='/items' element={<Items />} />
+                  <Route path='/items/:id' element={<ItemDetail />} />
+                  <Route path="/locations" element={<Locations />} />
+                  <Route path="/events" element={<Events />} />
+                  <Route path="/users" element={<Users />} />
+                </Route>
               </Route>
-            </Route>
 
-            <Route path='*' element={<Navigate to='/' replace />} />
+              <Route path='*' element={<Navigate to='/' replace />} />
 
-          </Routes>
-        </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

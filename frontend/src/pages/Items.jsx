@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, Paper, Chip, IconButton, Tooltip } from "@mui/material";
+import { Typography, IconButton, Tooltip, Box } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import AppDataGrid from "../components/common/AppDataGrid"; // Import our wrapper
+import AppDataGrid from "../components/common/AppDataGrid"; 
+import StatusChip from "../components/common/StatusChip";
+import { formatLabel } from "../utils/stringUtils";
+import { TOKENS } from "../theme/tokens";
 import api from "../api/axiosConfig";
 
 const Items = () => {
@@ -29,31 +32,34 @@ const Items = () => {
     {
       field: "status",
       headerName: "Status",
-      width: 130,
-      renderCell: (params) => {
-        const colors = {
-          active: "success",
-          missing: "warning",
-          consumed: "default",
-          complete: "primary",
-        };
-        return (
-          <Chip
-            label={params.value.toUpperCase()}
-            color={colors[params.value] || "default"}
-            size="small"
-          />
-        );
-      },
+      width: 140,
+      renderCell: (params) => <StatusChip status={params.value} />
     },
-    { field: "name", headerName: "Item Name", flex: 1, fontWeight: "bold" },
+    { 
+      field: "name", 
+      headerName: "Item Name", 
+      flex: 1, 
+      // Using theme typography for consistent weight
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+          {params.value}
+        </Typography>
+      )
+    },
     {
       field: "solutionType",
       headerName: "Type",
-      width: 120,
+      width: 140,
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ textTransform: "capitalize" }}>
-          {params.value === "workOrder" ? "Work Order" : params.value}
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: "text.secondary", 
+            fontWeight: 600,
+            fontSize: '0.85rem' 
+          }}
+        >
+          {formatLabel(params.value)}
         </Typography>
       ),
     },
@@ -61,7 +67,12 @@ const Items = () => {
       field: 'currentLocation', 
       headerName: 'Location', 
       flex: 1,
-      valueGetter: (value) => value?.name || 'N/A'
+      valueGetter: (value) => value?.name || 'N/A',
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ color: TOKENS.neutral.text }}>
+          {params.value}
+        </Typography>
+      )
     },
     {
       field: "lastUpdatedAt",
@@ -85,13 +96,19 @@ const Items = () => {
       field: "actions",
       headerName: "View",
       sortable: false,
-      width: 70,
+      width: 80,
       align: 'center',
       headerAlign: 'center',
       renderCell: (params) => (
         <Tooltip title="See Details">
-          <IconButton onClick={() => navigate(`/items/${params.row._id}`)}>
-            <VisibilityIcon color="primary" fontSize="small" />
+          <IconButton 
+            onClick={() => navigate(`/items/${params.row._id}`)}
+            sx={{ 
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'scale(1.1)', color: 'primary.main' } 
+            }}
+          >
+            <VisibilityIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       ),
@@ -99,21 +116,30 @@ const Items = () => {
   ];
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" sx={{ fontWeight: 800, mb: 3 }}>Inventory</Typography>
-      
+    <Box sx={{ width: '100%', height: '100%' }}>
       <AppDataGrid
         rows={items}
         columns={columns}
         getRowId={(row) => row._id}
         loading={loading}
-        // This replaces all that manual onMouseEnter logic
         getHighlightValue={(row) => row.solutionType} 
         initialState={{
-          pagination: { paginationModel: { pageSize: 10 } },
+          pagination: { paginationModel: { pageSize: 15 } },
         }}
-        // Override the autoHeight if you want a fixed-height scrollable list for the main view
-        sx={{ height: 700, bgcolor: 'background.paper' }}
+        sx={{ 
+          height: 750, 
+          bgcolor: 'background.paper',
+          borderRadius: 3,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          // Soften the header look to match the "blended" layout
+          '& .MuiDataGrid-columnHeaders': {
+            bgcolor: (theme) => theme.palette.grey[50],
+            borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+          },
+          '& .MuiDataGrid-cell': {
+            borderBottom: (theme) => `1px solid ${theme.palette.grey[100]}`,
+          }
+        }}
       />
     </Box>
   );
