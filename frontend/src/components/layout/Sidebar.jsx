@@ -1,9 +1,9 @@
 import React from "react";
 import { 
   Drawer, List, ListItem, ListItemButton, ListItemIcon, 
-  ListItemText, Typography, Box, Divider 
+  ListItemText, Typography, Box, Divider, ButtonBase 
 } from "@mui/material";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -38,10 +38,34 @@ const Sidebar = () => {
         },
       }}
     >
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, color: "primary.main" }}>
-          XEMELGO
-        </Typography>
+      <Box sx={{ p: 2 }}>
+        <ButtonBase
+          component={Link}
+          to="/"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            width: "100%",
+            p: 1,
+            borderRadius: 1,
+            transition: "background-color 0.2s",
+            "&:hover": {
+              bgcolor: "rgba(25, 118, 210, 0.04)", 
+            },
+          }}
+        >
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontWeight: 800, 
+              color: "primary.main",
+              letterSpacing: "-0.02em" 
+            }}
+          >
+            XEMELGO
+          </Typography>
+        </ButtonBase>
       </Box>
       <Divider />
       <List sx={{ px: 2, py: 2 }}>

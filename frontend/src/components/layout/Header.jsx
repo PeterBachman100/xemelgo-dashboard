@@ -10,7 +10,7 @@ const Header = () => {
       sx={{
         bgcolor: "transparent",
         color: "text.primary",
-        borderBottom: "1px solid #e5e7eb",
+        
         mb: 2,
       }}
     >

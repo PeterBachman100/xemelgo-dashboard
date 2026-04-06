@@ -21,7 +21,7 @@ const ActionConfirmModal = ({ open, onClose, onConfirm, action }) => {
       icon: <WarningAmberIcon color="error" />,
       buttonText: "Confirm Consumption"
     },
-    completed: {
+    complete: {
       title: "Mark as Completed",
       text: "Setting this item to 'Completed' signifies all work is finished. This moves the item to a terminal history state.",
       color: "success",

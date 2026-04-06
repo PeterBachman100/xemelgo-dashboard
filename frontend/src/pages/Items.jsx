@@ -89,10 +89,6 @@ const Items = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h4" sx={{ mb: 4, fontWeight: 700 }}>
-        Items
-      </Typography>
-
       <Paper elevation={2} sx={{ height: 600, width: "100%", borderRadius: 2 }}>
         <DataGrid
           rows={items}
