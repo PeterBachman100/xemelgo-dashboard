@@ -96,9 +96,10 @@ const ItemDetail = () => {
 
   return (
     <Box sx={{ p: 2, width: "100%" }}>
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
+
         {/* LEFT PANEL: INFO & ACTIONS */}
-        <Grid item xs={12} md={4} lg={3}>
+        <Grid size={{ xs: 12, md: 4, lg: 3 }}>
           <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>{item.name}</Typography>
             <Chip 
@@ -126,7 +127,7 @@ const ItemDetail = () => {
                 {locations.map((loc) => (<MenuItem key={loc._id} value={loc._id}>{loc.name}</MenuItem>))}
               </TextField>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3}}>
                 {ACTION_CONFIGS[item.solutionType]?.map((cfg) => (
                   <Button
                     key={cfg.label}
@@ -153,18 +154,18 @@ const ItemDetail = () => {
         </Grid>
 
         {/* RIGHT PANEL: TABLES */}
-        <Grid item xs={12} md={8} lg={9}>
+        <Grid size={{ xs: 12, md: 8, lg: 9 }} container spacing={2}>
           <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Location History</Typography>
             <AppDataGrid 
               rows={history} 
               columns={historyColumns} 
               getRowId={(r) => r._id} 
-              getHighlightValue={(row) => row.location?._id} 
-              hideFooter 
-              sx={{ mb: 4 }} 
+              getHighlightValue={(row) => row.location?._id}  
+              initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
             />
-
+          </Paper>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Action History</Typography>
             <AppDataGrid 
               rows={history} 

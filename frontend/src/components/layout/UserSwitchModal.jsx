@@ -9,17 +9,13 @@ const UserSwitchModal = ({ open, onClose, targetUser }) => {
 
   const passwordInputRef = useRef(null);
 
-  // 2. Force focus whenever the 'open' state becomes true
   useEffect(() => {
     if (open) {
-      // Small timeout ensures the Modal animation has started 
-      // and the DOM element is ready to receive focus.
       const timer = setTimeout(() => {
         passwordInputRef.current?.focus();
       }, 100);
       return () => clearTimeout(timer);
     } else {
-      // Clear password and errors when modal closes
       setPassword('');
       setError('');
     }

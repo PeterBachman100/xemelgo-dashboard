@@ -7,7 +7,10 @@ import api from "../../api/axiosConfig";
 
 const UserMenu = () => {
   const { user, logout } = useAuth();
-  const [staffList, setStaffList] = useState([]);
+  // const [staffList, setStaffList] = useState([]);
+  const [staffList, setStaffList] = useState(
+    user ? [{ _id: 'current', name: user.name }] : []
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingUser, setPendingUser] = useState("");
 

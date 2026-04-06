@@ -12,7 +12,8 @@ const AppDataGrid = ({ rows, columns, getHighlightValue, sx, ...props }) => {
       rows={rows}
       columns={columns}
       disableRowSelectionOnClick
-      // Logic: Compare current row's value to the hover state
+      autoHeight
+      pageSizeOptions={[5, 10, 25]}
       getRowClassName={(params) => {
         if (!getHighlightValue || !activeHighlight) return '';
         return getHighlightValue(params.row) === activeHighlight ? 'app-row-highlight' : '';
@@ -32,7 +33,8 @@ const AppDataGrid = ({ rows, columns, getHighlightValue, sx, ...props }) => {
         }
       }}
       sx={{
-        height: 350,
+        width: '100%',
+        minHeight: 200,
         border: '1px solid #e5e7eb',
         borderRadius: 2,
         '& .MuiDataGrid-columnHeaders': { 
