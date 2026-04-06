@@ -26,17 +26,6 @@ const Items = () => {
   }, [location]);
 
   const columns = [
-    { field: "name", headerName: "Item Name", flex: 1, fontWeight: "bold" },
-    {
-      field: "solutionType",
-      headerName: "Type",
-      width: 120,
-      renderCell: (params) => (
-        <Typography variant="body2" sx={{ textTransform: "capitalize" }}>
-          {params.value === "workOrder" ? "Work Order" : params.value}
-        </Typography>
-      ),
-    },
     {
       field: "status",
       headerName: "Status",
@@ -57,17 +46,22 @@ const Items = () => {
         );
       },
     },
+    { field: "name", headerName: "Item Name", flex: 1, fontWeight: "bold" },
+    {
+      field: "solutionType",
+      headerName: "Type",
+      width: 120,
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ textTransform: "capitalize" }}>
+          {params.value === "workOrder" ? "Work Order" : params.value}
+        </Typography>
+      ),
+    },
     { 
       field: 'currentLocation', 
       headerName: 'Location', 
       flex: 1,
       valueGetter: (value) => value?.name || 'N/A'
-    },
-    {
-      field: "lastUpdatedBy",
-      headerName: "Updated By",
-      width: 150,
-      valueGetter: (value) => value?.name || "System",
     },
     {
       field: "lastUpdatedAt",
@@ -80,6 +74,12 @@ const Items = () => {
           timeStyle: 'short' 
         });
       },
+    },
+    {
+      field: "lastUpdatedBy",
+      headerName: "Updated By",
+      width: 150,
+      valueGetter: (value) => value?.name || "System",
     },
     {
       field: "actions",

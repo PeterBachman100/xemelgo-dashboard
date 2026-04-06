@@ -4,7 +4,6 @@ import { DataGrid } from '@mui/x-data-grid';
 const AppDataGrid = ({ rows, columns, getHighlightValue, sx, ...props }) => {
   const [activeHighlight, setActiveHighlight] = useState(null);
 
-  // Standard blue highlight from the Sitemark palette
   const HIGHLIGHT_COLOR = "rgba(25, 118, 210, 0.12)";
 
   return (
@@ -18,7 +17,13 @@ const AppDataGrid = ({ rows, columns, getHighlightValue, sx, ...props }) => {
         if (!getHighlightValue || !activeHighlight) return '';
         return getHighlightValue(params.row) === activeHighlight ? 'app-row-highlight' : '';
       }}
+      showToolbar
       slotProps={{
+        toolbar: {
+            csvOptions: { disableToolbarButton: true }, 
+            printOptions: { disableToolbarButton: true },
+            showQuickFilter: true,
+        },
         row: {
           onMouseEnter: (e) => {
             if (!getHighlightValue) return;

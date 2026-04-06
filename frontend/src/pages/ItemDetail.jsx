@@ -84,14 +84,58 @@ const ItemDetail = () => {
   const isTerminalStatus = ["consumed", "complete"].includes(item.status);
   const history = item.history || [];
 
-  const historyColumns = [
+ const fullColumns = [
+  { 
+    field: "location", 
+    headerName: "Location", 
+    flex: 1, 
+    valueGetter: (value) => value?.name || "N/A" 
+  },
+  { 
+    field: "action", 
+    headerName: "Action", 
+    width: 150, 
+    renderCell: (p) => (
+      <Chip 
+        label={p.value?.replace("-", " ").toUpperCase()} 
+        size="small" 
+        variant="outlined" 
+        color={p.value === 'missing' ? 'error' : 'default'} 
+      />
+    )
+  },
+  { 
+    field: "user", 
+    headerName: "Performed By", 
+    width: 150, 
+    valueGetter: (value) => value?.name || "System" 
+  },
+  { 
+    field: "createdAt", 
+    headerName: "Time", 
+    width: 180, 
+    valueFormatter: (value) => {
+      if (!value) return "N/A";
+      return new Date(value).toLocaleString([], { 
+        dateStyle: 'short', 
+        timeStyle: 'short' 
+      });
+    }
+  },
+];
+
+  const locationColumns = [
+    { field: "location", headerName: "Location", flex: 1, valueGetter: (p) => p?.name || "N/A" },
     { field: "createdAt", headerName: "Date/Time", width: 180, valueFormatter: (value) => new Date(value).toLocaleString() },
+  ];
+
+  const actionColumns = [
+    { field: "user", headerName: "Performed By", width: 150, valueGetter: (v) => v?.name || "System" },
     { 
       field: "action", headerName: "Action", width: 150, 
       renderCell: (p) => <Chip label={p.value.replace("-", " ").toUpperCase()} size="small" variant="outlined" color={p.value === 'missing' ? 'error' : 'default'} /> 
     },
-    { field: "location", headerName: "Location", flex: 1, valueGetter: (p) => p?.name || "N/A" },
-    { field: "user", headerName: "Performed By", width: 150, valueGetter: (v) => v?.name || "System" },
+    { field: "createdAt", headerName: "Date/Time", width: 180, valueFormatter: (value) => new Date(value).toLocaleString() },
   ];
 
   return (
@@ -159,7 +203,7 @@ const ItemDetail = () => {
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Location History</Typography>
             <AppDataGrid 
               rows={history} 
-              columns={historyColumns} 
+              columns={locationColumns} 
               getRowId={(r) => r._id} 
               getHighlightValue={(row) => row.location?._id}  
               initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
@@ -169,9 +213,18 @@ const ItemDetail = () => {
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Action History</Typography>
             <AppDataGrid 
               rows={history} 
-              columns={historyColumns} 
+              columns={actionColumns} 
               getRowId={(r) => r._id} 
               getHighlightValue={(row) => row.user?._id} 
+              initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
+            />
+          </Paper>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Full History</Typography>
+            <AppDataGrid 
+              rows={history} 
+              columns={fullColumns} 
+              getRowId={(r) => r._id} 
               initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
             />
           </Paper>
