@@ -3,26 +3,40 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
-// Route Imports
 const authRoutes = require('./routes/authRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const userRoutes = require('./routes/userRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 
-// 1. Load ENV variables
 dotenv.config();
-
-// 2. Connect to Database
 connectDB();
 
 const app = express();
 
-// 3. Standard Middleware
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173', // Vite default
+  'http://localhost:3000', // CRA default
+  process.env.FRONTEND_URL  // Your Vercel URL (add this to Render later)
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json());
 
-// 4. Test Route (Health Check)
+app.get('/', (req, res) => {
+  res.status(200).send("API is running...");
+});
 app.get('/api/health', (req, res) => {
   res.status(200).json({ message: "Server is alive and connected to DB" });
 });
