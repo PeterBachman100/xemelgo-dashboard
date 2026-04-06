@@ -84,7 +84,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               margin="normal"
               required
-              helperText="Hint: 'asdf' for all seeded users"
+              helperText="Hint: 'left'"
             />
 
             <Button
