@@ -126,7 +126,7 @@ const ItemDetail = () => {
     <Box sx={{ p: 2, width: "100%" }}>
       <Grid container spacing={3}>
         {/* LEFT PANEL */}
-        <Grid item xs={12} md={4} lg={3}>
+       <Grid size={{ xs: 12, md: 4, lg: 3 }}>
           <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper' }}>
             <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>{item.name}</Typography>
             <StatusChip status={item.status} sx={{ mb: 3 }} />
@@ -180,36 +180,45 @@ const ItemDetail = () => {
         </Grid>
 
         {/* RIGHT PANEL */}
-        <Grid item xs={12} md={8} lg={9} container spacing={2}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Location History</Typography>
-            <AppDataGrid 
-              rows={history} 
-              columns={locationColumns} 
-              getRowId={(r) => r._id} 
-              getHighlightValue={(row) => row.location?._id}  
-              initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
-            />
-          </Paper>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Action History</Typography>
-            <AppDataGrid 
-              rows={history} 
-              columns={actionColumns} 
-              getRowId={(r) => r._id} 
-              getHighlightValue={(row) => row.user?._id} 
-              initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
-            />
-          </Paper>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Full History</Typography>
-            <AppDataGrid 
-              rows={history} 
-              columns={fullColumns} 
-              getRowId={(r) => r._id} 
-              initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
-            />
-          </Paper>
+        <Grid size={{ xs: 12, md: 8, lg: 9 }} container spacing={2}>
+          <Grid size={{ xs: 12, md: 6, lg: 6}}>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Location History</Typography>
+              <AppDataGrid 
+                rows={history} 
+                columns={locationColumns} 
+                getRowId={(r) => r._id} 
+                getHighlightValue={(row) => row.location?._id}  
+                initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
+                showToolbar
+              />
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6, lg: 6}}>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Action History</Typography>
+              <AppDataGrid 
+                rows={history} 
+                columns={actionColumns} 
+                getRowId={(r) => r._id} 
+                getHighlightValue={(row) => row.user?._id} 
+                initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
+                showToolbar
+              />
+            </Paper>
+          </Grid>
+          <Grid size={12}>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: (theme) => `1px solid ${theme.palette.divider}` }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Full History</Typography>
+              <AppDataGrid 
+                rows={history} 
+                columns={fullColumns} 
+                getRowId={(r) => r._id} 
+                initialState={{ pagination: { paginationModel: { pageSize: 5 } } }} 
+                showToolbar
+              />
+            </Paper>
+          </Grid>
         </Grid>
       </Grid>
 

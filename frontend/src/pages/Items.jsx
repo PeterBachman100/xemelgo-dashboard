@@ -123,6 +123,7 @@ const Items = () => {
         getRowId={(row) => row._id}
         loading={loading}
         getHighlightValue={(row) => row.solutionType} 
+        showToolbar
         initialState={{
           pagination: { paginationModel: { pageSize: 15 } },
         }}

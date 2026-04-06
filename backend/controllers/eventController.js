@@ -18,11 +18,13 @@ const getEventsByItem = async (req, res) => {
 const getRecentEvents = async (req, res) => {
   try {
     const events = await Event.find({})
+      .populate('itemId', 'name') // Pulls the 'name' field from the 'Item' collection
       .sort({ createdAt: -1 })
       .limit(50);
       
     res.json(events);
   } catch (error) {
+    console.error('Fetch Events Error:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 };

@@ -5,8 +5,18 @@ import { formatLabel } from '../../utils/stringUtils';
 const ActionChip = ({ action, size = "small", sx = {}, ...props }) => {
   const theme = useTheme();
   
-  // Use 'move' as a fallback if the action isn't found
-  const config = theme.palette.action?.[action] || theme.palette.action.move;
+  // Normalizing the key: mapping the DB 'past tense' to the Theme 'present tense'
+  const actionKeyMap = {
+    scanned: 'scan',
+    received: 'receive',
+    moved: 'move',
+    consumed: 'consume',
+    completed: 'complete',
+    missing: 'missing'
+  };
+
+  const normalizedAction = actionKeyMap[action] || action;
+  const config = theme.palette.action?.[normalizedAction] || theme.palette.action.move;
 
   return (
     <Chip
@@ -16,7 +26,7 @@ const ActionChip = ({ action, size = "small", sx = {}, ...props }) => {
         bgcolor: config.bg,
         color: config.text,
         border: config.border,
-        fontWeight: config.fontWeight,
+        fontWeight: config.fontWeight || 600,
         
         // Structural Styles
         fontSize: '0.65rem',
@@ -24,6 +34,7 @@ const ActionChip = ({ action, size = "small", sx = {}, ...props }) => {
         borderRadius: '6px',
         height: '24px',
         cursor: 'default',
+        textTransform: 'uppercase', // Professional "Kirkland" label look
         ...sx
       }}
       {...props}

@@ -23,6 +23,14 @@ export const TOKENS = {
     fontWeight: 800,
     severity: 'error',
   },
+  processed: {
+    main: '#334155',    // Deep Slate
+    bg: '#eff6ff',      // Very light blue-wash
+    text: '#1e40af',    // Strong Indigo text
+    border: '1px solid #1e40af33',
+    fontWeight: 600,
+    severity: 'info',
+  },
   archive: {
     main: '#94a3b8',
     bg: '#f8fafc',
@@ -37,14 +45,14 @@ export const STATUS_MAP = {
   active: TOKENS.neutral,
   missing: TOKENS.error,
   complete: TOKENS.success,
-  consumed: TOKENS.archive,
+  consumed: TOKENS.processed,
 };
 
 export const ACTION_MAP = {
   move: TOKENS.neutral,
   scan: TOKENS.neutral,
   receive: TOKENS.neutral,
-  consume: TOKENS.success,
+  consume: TOKENS.processed,
   complete: TOKENS.success,
   missing: TOKENS.error,
 };

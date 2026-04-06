@@ -18,7 +18,7 @@ const theme = createTheme({
       active:   { ...TOKENS.neutral },
       missing:  { ...TOKENS.error },
       complete: { ...TOKENS.success },
-      consumed: { ...TOKENS.archive },
+      consumed: { ...TOKENS.processed },
     },
 
     action: {
@@ -28,7 +28,7 @@ const theme = createTheme({
       receive: { ...TOKENS.neutral },
 
       // Terminal Operations
-      consume:  { ...TOKENS.success },
+      consume:  { ...TOKENS.processed },
       complete: { ...TOKENS.success },
 
       // Alert Operations
